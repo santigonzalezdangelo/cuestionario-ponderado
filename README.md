@@ -64,7 +64,9 @@ Tecnologías: Next.js (en Vercel) + Supabase (base de datos, login del anfitrió
 
 ## Límites del plan gratis (de sobra para 100 invitados)
 
-- Las fotos se comprimen en el celu antes de subirse (~100–200 KB), así 100 invitados viendo la galería
-  usan bastante menos que los 5 GB de tráfico mensual gratis de Supabase.
+- Las fotos se comprimen en el celu antes de subirse, en dos versiones: una miniatura de 480×640
+  (~40–60 KB) para la galería y una grande de 1080×1440 (~150–300 KB) que solo se baja al ampliarla con 🔍.
+  Aun si 100 invitados recorren 100 disfraces son menos de 0,5 GB, lejos de los 5 GB de tráfico mensual
+  gratis de Supabase.
 - 100 votos al mismo tiempo no son problema: cada voto es una sola consulta y la base de datos garantiza que no
   se dupliquen.

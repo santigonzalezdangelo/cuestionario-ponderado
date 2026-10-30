@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { photoUrl, supabase, type Result, type Status } from "@/lib/supabase";
+import { supabase, type Result, type Status } from "@/lib/supabase";
 import { errorMessage } from "@/lib/browser";
+import Thumb from "../thumb";
 
 const MEDALS = ["", "🥇", "🥈", "🥉"];
 
@@ -137,9 +138,8 @@ export default function ResultsTab({
                   r.pos === 1 ? "border-pumpkin" : "border-line"
                 }`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photoUrl(r.photo_path)}
+                <Thumb
+                  path={r.photo_path}
                   alt={r.name}
                   className={`aspect-[3/4] rounded-xl object-cover ${r.pos === 1 ? "w-36" : "w-24"}`}
                 />

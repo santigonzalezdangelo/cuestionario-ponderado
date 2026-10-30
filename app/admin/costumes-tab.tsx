@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BUCKET, fetchCostumes, photoUrl, supabase, type Costume } from "@/lib/supabase";
+import { BUCKET, fetchCostumes, supabase, thumbPath, type Costume } from "@/lib/supabase";
 import { compressImage, errorMessage, extensionFor, randomId } from "@/lib/browser";
+import Thumb from "../thumb";
 
 export default function CostumesTab() {
   const [costumes, setCostumes] = useState<Costume[] | null>(null);
@@ -33,19 +34,29 @@ export default function CostumesTab() {
     setError("");
     const sb = supabase();
     try {
-      const blob = await compressImage(file);
-      const path = `${randomId()}.${extensionFor(blob)}`;
-      const upload = await sb.storage
-        .from(BUCKET)
-        .upload(path, blob, { contentType: blob.type || "image/jpeg", cacheControl: "31536000" });
-      if (upload.error) throw upload.error;
+      const { full, thumb } = await compressImage(file);
+      const path = `${randomId()}.${extensionFor(full)}`;
+      const files = [path, thumbPath(path)];
+      const uploads = await Promise.all(
+        [full, thumb].map((blob, i) =>
+          sb.storage.from(BUCKET).upload(files[i], blob, {
+            contentType: blob.type || "image/jpeg",
+            cacheControl: "31536000",
+          }),
+        ),
+      );
+      const uploadError = uploads.find((u) => u.error)?.error;
+      if (uploadError) {
+        await sb.storage.from(BUCKET).remove(files);
+        throw uploadError;
+      }
       const { data, error } = await sb
         .from("costumes")
         .insert({ name: name.trim(), photo_path: path })
         .select()
         .single();
       if (error) {
-        await sb.storage.from(BUCKET).remove([path]);
+        await sb.storage.from(BUCKET).remove(files);
         throw error;
       }
       setCostumes((prev) => [...(prev ?? []), data]);
@@ -160,19 +171,13 @@ function CostumeItem({
       setBusy(false);
       return alert(error.message);
     }
-    await sb.storage.from(BUCKET).remove([costume.photo_path]);
+    await sb.storage.from(BUCKET).remove([costume.photo_path, thumbPath(costume.photo_path)]);
     onDelete(costume.id);
   }
 
   return (
     <li className="overflow-hidden rounded-xl border border-line bg-card">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={photoUrl(costume.photo_path)}
-        alt={costume.name}
-        loading="lazy"
-        className="aspect-[3/4] w-full object-cover"
-      />
+      <Thumb path={costume.photo_path} alt={costume.name} className="aspect-[3/4] w-full object-cover" />
       <div className="flex flex-col gap-2 p-2">
         {editing ? (
           <>

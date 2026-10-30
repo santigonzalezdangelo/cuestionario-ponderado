@@ -25,8 +25,11 @@ export function getVoterToken(): string {
 }
 
 // Una foto vertical de celular (4:3) queda en 1080x1440.
-const MAX_SHORT_SIDE = 1080;
-const MAX_LONG_SIDE = 1440;
+type Size = { short: number; long: number; quality: number };
+// Foto grande (solo se baja al ampliarla): una vertical 4:3 queda en 1080x1440.
+const FULL: Size = { short: 1080, long: 1440, quality: 0.78 };
+// Miniatura para la galería (~40-60 KB): sobra para una tarjeta en el celular.
+const THUMB: Size = { short: 480, long: 640, quality: 0.72 };
 // Los mismos formatos y tamaño que acepta el bucket "fotos" (ver supabase/schema.sql).
 const UPLOADABLE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -107,22 +110,32 @@ function toJpeg(decoded: Decoded, scale: number, quality: number): Promise<Blob 
   );
 }
 
-// Achica la foto antes de subirla (~150-300 KB) para que suba rápido con el wifi de la
-// fiesta y no gaste el tráfico gratis. Si un método falla, prueba el siguiente.
-export async function compressImage(file: File, quality = 0.78): Promise<Blob> {
+async function resize(decoded: Decoded, size: Size): Promise<Blob | null> {
+  const short = Math.min(decoded.width, decoded.height);
+  const long = Math.max(decoded.width, decoded.height);
+  const scale = Math.min(1, size.short / short, size.long / long);
+  // Si el celular se queda sin memoria para el lienzo, reintenta más chico.
+  for (const factor of [1, 0.75, 0.5]) {
+    const blob = await toJpeg(decoded, scale * factor, size.quality);
+    if (blob && blob.size > 0) return blob;
+  }
+  return null;
+}
+
+export type CompressedPhoto = { full: Blob; thumb: Blob };
+
+// Achica la foto antes de subirla para que suba rápido con el wifi de la fiesta y no
+// gaste el tráfico gratis: una versión grande (~150-300 KB) y una miniatura, las dos
+// desde una sola lectura de la foto. Si un método falla, prueba el siguiente.
+export async function compressImage(file: File): Promise<CompressedPhoto> {
   for (const decode of [decodeWithImg, decodeWithBitmap]) {
     let decoded: Decoded | null = null;
     try {
       decoded = await decode(file);
       if (!decoded.width || !decoded.height) continue;
-      const short = Math.min(decoded.width, decoded.height);
-      const long = Math.max(decoded.width, decoded.height);
-      const scale = Math.min(1, MAX_SHORT_SIDE / short, MAX_LONG_SIDE / long);
-      // Si el celular se queda sin memoria para el lienzo, reintenta más chico.
-      for (const factor of [1, 0.75, 0.5]) {
-        const blob = await toJpeg(decoded, scale * factor, quality);
-        if (blob && blob.size > 0) return blob;
-      }
+      const full = await resize(decoded, FULL);
+      const thumb = full && (await resize(decoded, THUMB));
+      if (full && thumb) return { full, thumb };
     } catch {
       // Probar con el siguiente método.
     } finally {
@@ -130,7 +143,9 @@ export async function compressImage(file: File, quality = 0.78): Promise<Blob> {
     }
   }
   // Último recurso: subir el original tal cual, si el formato y el tamaño lo permiten.
-  if (UPLOADABLE_TYPES.includes(file.type) && file.size <= MAX_UPLOAD_BYTES) return file;
+  if (UPLOADABLE_TYPES.includes(file.type) && file.size <= MAX_UPLOAD_BYTES) {
+    return { full: file, thumb: file };
+  }
   throw new Error("No se pudo procesar la foto. Probá sacarla de nuevo o elegir otra (JPG o PNG).");
 }
 

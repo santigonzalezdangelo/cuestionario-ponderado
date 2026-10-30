@@ -12,6 +12,7 @@ import {
   type Status,
 } from "@/lib/supabase";
 import { errorMessage, getVoterToken } from "@/lib/browser";
+import Thumb from "./thumb";
 
 type Phase = "cargando" | "error" | "esperando" | "votando" | "enviado" | "ya_voto";
 
@@ -191,11 +192,9 @@ function VotePage() {
               }`}
             >
               <button onClick={() => toggle(c.id)} className="block w-full text-left">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photoUrl(c.photo_path)}
+                <Thumb
+                  path={c.photo_path}
                   alt={c.name}
-                  loading="lazy"
                   className={`aspect-[3/4] w-full object-cover transition ${selected ? "opacity-80" : ""}`}
                 />
                 <p className="p-2 text-sm font-medium leading-tight">{c.name}</p>
@@ -247,12 +246,16 @@ function VotePage() {
           onClick={() => setZoom(null)}
           className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/95 p-4"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={photoUrl(zoom.photo_path)}
-            alt={zoom.name}
-            className="max-h-[80vh] max-w-full rounded-xl object-contain"
-          />
+          {/* La miniatura se ve al instante; la foto grande se carga encima. */}
+          <span className="relative block h-[80vh] w-full">
+            <Thumb path={zoom.photo_path} alt="" className="absolute inset-0 h-full w-full object-contain" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photoUrl(zoom.photo_path)}
+              alt={zoom.name}
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+          </span>
           <p className="text-lg font-semibold">{zoom.name}</p>
           <p className="text-sm text-muted">Tocá para cerrar</p>
         </button>

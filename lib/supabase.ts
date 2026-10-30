@@ -54,6 +54,15 @@ export function photoUrl(path: string) {
   return supabase().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
+// La miniatura de cada foto se guarda en thumbs/ con el mismo nombre.
+export function thumbPath(path: string) {
+  return `thumbs/${path}`;
+}
+
+export function thumbUrl(path: string) {
+  return photoUrl(thumbPath(path));
+}
+
 export async function fetchStatus(): Promise<Status> {
   const { data, error } = await supabase()
     .from("settings")
