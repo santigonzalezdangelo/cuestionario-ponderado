@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎃 Votación de disfraces de Halloween
 
-## Getting Started
+- **`/`** → página para los invitados (a esta apunta el QR). Eligen sus 3 favoritos en orden.
+- **`/admin`** → panel del anfitrión: cargar disfraces con foto, abrir/cerrar la votación, QR, ver votos y el podio.
 
-First, run the development server:
+Puntaje: 1° = 3 pts, 2° = 2 pts, 3° = 1 pt. Desempate: más primeros puestos, después más segundos.
+Un voto por celular (se guarda un ID en el navegador y la base de datos rechaza el segundo voto).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Tecnologías: Next.js (en Vercel) + Supabase (base de datos, login del anfitrión y fotos). No hay otro backend.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 1. Supabase (base de datos)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Entrá a <https://supabase.com> → **Start your project** → registrate con GitHub.
+2. **New project**: ponele un nombre, generá una contraseña de base de datos (guardala) y elegí la región
+   **South America (São Paulo)**. Esperá ~2 minutos a que se cree.
+3. Abrí [`supabase/schema.sql`](supabase/schema.sql), **cambiá `TU_EMAIL@ejemplo.com` (última línea) por tu email**,
+   copiá todo el archivo y pegalo en **SQL Editor → New query → Run**. Tiene que decir *Success*.
+4. **Authentication → Users → Add user → Create new user**: tu mismo email + una contraseña, y tildá
+   **Auto Confirm User**. Con ese usuario vas a entrar a `/admin`.
+5. **Authentication → Sign In / Providers**: desactivá **Allow new users to sign up** (así nadie más puede crearse una cuenta).
+6. **Project Settings → Data API** (o el botón **Connect**): copiá la **Project URL**.
+   **Project Settings → API Keys**: copiá la **Publishable key** (`sb_publishable_...`). Si tu proyecto
+   solo muestra la "anon key", usá esa.
 
-## Learn More
+## 2. Probarlo en tu compu
 
-To learn more about Next.js, take a look at the following resources:
+1. Copiá `.env.example` como `.env.local` y pegá ahí la URL y la key.
+2. En esta carpeta:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Abrí <http://localhost:3000/admin>, entrá con tu usuario, cargá 3 disfraces de prueba, abrí la votación y votá
+   desde <http://localhost:3000>.
 
-## Deploy on Vercel
+## 3. Publicarlo (GitHub + Vercel)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Creá una cuenta en <https://github.com> y un repositorio **privado** vacío (ej. `halloween-votos`).
+2. Subí el código (GitHub te muestra los comandos al crear el repo; `.env.local` no se sube).
+3. Entrá a <https://vercel.com> → registrate con GitHub → **Add New… → Project** → importá el repo.
+4. Antes de **Deploy**, en **Environment Variables** agregá las dos variables de `.env.local`
+   (`NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`).
+5. **Deploy**. Te da una URL tipo `https://halloween-votos.vercel.app`. El panel queda en `/admin`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> Si cambiás las variables en Vercel después, hay que hacer **Redeploy** para que las tome.
+
+## 4. Checklist para la fiesta
+
+- **El día anterior**: entrá a Supabase (los proyectos gratis se pausan tras 7 días sin uso) y hacé una prueba
+  completa con 2 o 3 celulares.
+- Después de probar: en **Votación → Borrar todos los votos**, borrá los disfraces de prueba y dejá el estado en
+  *Preparando* (si quedó *Cerrada* no pasa nada, al abrir se reabre).
+- En la fiesta: cargá cada disfraz a medida que llegan (podés entrar y salir del panel las veces que quieras).
+- Cuando estén todos: **Abrir votación** → **Pantalla completa** del QR para que lo escaneen.
+- En **Votación** ves cuántos votaron y quiénes (⚠️ marca nombres repetidos por si alguien votó dos veces;
+  podés borrar ese voto).
+- **Cerrar votación** → **Resultados** → **Revelar 3° / 2° / 1° puesto**.
+
+## Límites del plan gratis (de sobra para 100 invitados)
+
+- Las fotos se comprimen en el celu antes de subirse (~100–200 KB), así 100 invitados viendo la galería
+  usan bastante menos que los 5 GB de tráfico mensual gratis de Supabase.
+- 100 votos al mismo tiempo no son problema: cada voto es una sola consulta y la base de datos garantiza que no
+  se dupliquen.
