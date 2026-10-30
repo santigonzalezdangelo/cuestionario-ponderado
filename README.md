@@ -1,5 +1,8 @@
 # 🎃 Votación de disfraces de Halloween
 
+**Publicada en:** <https://cuestionario-ponderado.vercel.app> · panel: <https://cuestionario-ponderado.vercel.app/admin>
+(cada `git push` a `main` se publica solo en Vercel)
+
 - **`/`** → página para los invitados (a esta apunta el QR). Eligen sus 3 favoritos en orden.
 - **`/admin`** → panel del anfitrión: cargar disfraces con foto, abrir/cerrar la votación, QR, ver votos y el podio.
 
