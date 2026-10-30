@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BUCKET, fetchCostumes, photoUrl, supabase, type Costume } from "@/lib/supabase";
-import { compressImage, errorMessage, randomId } from "@/lib/browser";
+import { compressImage, errorMessage, extensionFor, randomId } from "@/lib/browser";
 
 export default function CostumesTab() {
   const [costumes, setCostumes] = useState<Costume[] | null>(null);
@@ -32,12 +32,12 @@ export default function CostumesTab() {
     setSaving(true);
     setError("");
     const sb = supabase();
-    const path = `${randomId()}.jpg`;
     try {
       const blob = await compressImage(file);
+      const path = `${randomId()}.${extensionFor(blob)}`;
       const upload = await sb.storage
         .from(BUCKET)
-        .upload(path, blob, { contentType: "image/jpeg", cacheControl: "31536000" });
+        .upload(path, blob, { contentType: blob.type || "image/jpeg", cacheControl: "31536000" });
       if (upload.error) throw upload.error;
       const { data, error } = await sb
         .from("costumes")
